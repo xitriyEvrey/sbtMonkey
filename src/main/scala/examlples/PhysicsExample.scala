@@ -61,17 +61,35 @@ class PhysicsExample extends SimpleApplication {
 
   var bulletAppState:BulletAppState = _
   var floor:Geometry = _
+  var wall1:Geometry = _
+  var wall2:Geometry = _
+  var wall3:Geometry = _
+  var wall4:Geometry = _
+  var wall5:Geometry = _
   override def simpleInitApp(): Unit = {
     flyCam.setMoveSpeed(100f)
     bulletAppState = new BulletAppState()
     stateManager.attach(bulletAppState)
 
     floor = makeBox(new Vector3f(0f, -10.05f, 0f), new Vector3f(100f, 0.1f, 100f), "floor", ColorRGBA.Gray)
+    wall1 = makeBox(new Vector3f(0f, 0f, 99.5f), new Vector3f(20f, 10f, 0.5f), "wall1", ColorRGBA.Red)
+    wall2 = makeBox(new Vector3f(20f, 0f, 80f), new Vector3f(0.5f, 10f, 20f), "wall2", ColorRGBA.Blue)
+    wall3 = makeBox(new Vector3f(-20f, 0f, 80f), new Vector3f(0.5f, 10f, 20f), "wall3", ColorRGBA.Blue)
+    wall4 = makeBox(new Vector3f(15f, 0f, 60f), new Vector3f(5f, 10f, 0.5f), "wall4", ColorRGBA.Red)
+    wall5 = makeBox(new Vector3f(-15f, 0f, 60f), new Vector3f(5f, 10f, 0.5f), "wall5", ColorRGBA.Red)
+
+
+
 
     makeRigid(floor, 0f)
+    makeRigid(wall1, 0f)
+    makeRigid(wall2, 0f)
+    makeRigid(wall3, 0f)
+    makeRigid(wall4, 0f)
+    makeRigid(wall5, 0f)
 
 
-    val max = 20
+    val max = 0
     for (i <- 0 until max; j <- 0 until i) {
       val y = (max - i.toFloat) - 10
       val x = (max - i) / 2f + j
@@ -83,7 +101,7 @@ class PhysicsExample extends SimpleApplication {
   }
 
 
-  def initShooting(): Unit = {x`
+  def initShooting(): Unit = {
     setDisplayStatView(false)
     guiFont = assetManager.loadFont("Interface/Fonts/Default.fnt")
     val ch = new BitmapText(guiFont, false)
@@ -100,9 +118,9 @@ class PhysicsExample extends SimpleApplication {
       override def onAction(name: String, isPressed: Boolean, tpf: Float): Unit = {
         if (isPressed) {
           println("shoot")
-          val ball = makeSphere(cam.getLocation, 5f, "ball", ColorRGBA.Green)
+          val ball = makeSphere(cam.getLocation, 1f, "ball", ColorRGBA.Green)
           val ballPhy = makeRigid(ball, 5f)
-          ballPhy.setLinearVelocity(cam.getDirection().normalize().mult(50f))
+          ballPhy.setLinearVelocity(cam.getDirection().normalize().mult(100f))
           ball.setUserData("phy", ballPhy)
         }
       }
