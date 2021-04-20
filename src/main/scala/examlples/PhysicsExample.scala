@@ -23,9 +23,10 @@ object PhysicsExample {
 
   }
 }
+
 class PhysicsExample extends SimpleApplication {
 
-  def makeSphere(pos: Vector3f, radius:Float,  name: String, color: ColorRGBA): Geometry = {
+  def makeSphere(pos: Vector3f, radius: Float, name: String, color: ColorRGBA): Geometry = {
     val b = new Sphere(16, 16, radius) // create cube shape
     val box = new Geometry(name, b) // create cube geometry from the shape
     val mat = new Material(assetManager, "Common/MatDefs/Misc/Unshaded.j3md") // create a simple material
@@ -37,7 +38,7 @@ class PhysicsExample extends SimpleApplication {
     box
   }
 
-  def makeBox(pos: Vector3f,size:Vector3f,  name: String, color: ColorRGBA): Geometry = {
+  def makeBox(pos: Vector3f, size: Vector3f, name: String, color: ColorRGBA): Geometry = {
     val b = new Box(size.x, size.y, size.z) // create cube shape
     val box = new Geometry(name, b) // create cube geometry from the shape
     val mat = new Material(assetManager, "Common/MatDefs/Misc/Unshaded.j3md") // create a simple material
@@ -50,22 +51,30 @@ class PhysicsExample extends SimpleApplication {
   }
 
 
-  def makeRigid(g:Geometry, mass:Float):RigidBodyControl = {
+  def makeRigid(g: Geometry, mass: Float): RigidBodyControl = {
     val phy = new RigidBodyControl(mass)
     g.addControl(phy)
     bulletAppState.getPhysicsSpace.add(phy)
     phy.setKinematicSpatial(mass == 0f)
-//    phy.setCcdSweptSphereRadius(.5f)
+    //    phy.setCcdSweptSphereRadius(.5f)
     phy
   }
 
-  var bulletAppState:BulletAppState = _
-  var floor:Geometry = _
-  var wall1:Geometry = _
-  var wall2:Geometry = _
-  var wall3:Geometry = _
-  var wall4:Geometry = _
-  var wall5:Geometry = _
+  var bulletAppState: BulletAppState = _
+  var floor: Geometry = _
+  var wall1: Geometry = _
+  var wall2: Geometry = _
+  var wall3: Geometry = _
+  var wall4: Geometry = _
+  var wall5: Geometry = _
+
+  var ball1: Geometry = _
+  var ball2: Geometry = _
+  var ball3: Geometry = _
+
+  var sanitar: Geometry = _
+
+
   override def simpleInitApp(): Unit = {
     flyCam.setMoveSpeed(100f)
     bulletAppState = new BulletAppState()
@@ -79,8 +88,6 @@ class PhysicsExample extends SimpleApplication {
     wall5 = makeBox(new Vector3f(-15f, 0f, 60f), new Vector3f(5f, 10f, 0.5f), "wall5", ColorRGBA.Red)
 
 
-
-
     makeRigid(floor, 0f)
     makeRigid(wall1, 0f)
     makeRigid(wall2, 0f)
@@ -88,14 +95,25 @@ class PhysicsExample extends SimpleApplication {
     makeRigid(wall4, 0f)
     makeRigid(wall5, 0f)
 
+     ball1 = makeSphere(new Vector3f(0f, 10.05f, 0f), 2.0f, "ball1", ColorRGBA.Yellow)
+    makeRigid(ball1, 1f)
 
-    val max = 0
+     ball2 = makeSphere(new Vector3f(20f, 10.05f, 0f), 2.0f, "ball2", ColorRGBA.Yellow)
+    makeRigid(ball2, 1f)
+
+     ball3 = makeSphere(new Vector3f(-20f, 10.05f, 20f), 2.0f, "ball3", ColorRGBA.Yellow)
+    makeRigid(ball3, 1f)
+
+     sanitar = makeSphere(new Vector3f(-20f, 10.05f, 20f), 4.0f, "sanitar", ColorRGBA.White)
+    makeRigid(sanitar, 10f)
+
+    /*val max = 0
     for (i <- 0 until max; j <- 0 until i) {
       val y = (max - i.toFloat) - 10
       val x = (max - i) / 2f + j
-      val b = makeBox(new Vector3f(x, y, 0f), new Vector3f(.5f, 0.5f, .5f + (max - i) / 20.0f),  s"box $i $j", new ColorRGBA(math.random().toFloat, math.random().toFloat, math.random().toFloat, 1f))
+      val b = makeBox(new Vector3f(x, y, 0f), new Vector3f(.5f, 0.5f,.5f + (max - i) / 20.0f), s"box $i $j", new ColorRGBA(math.random().toFloat, math.random().toFloat, math.random().toFloat, 1f))
       makeRigid(b, 1f)
-    }
+    }*/
 
     initShooting()
   }
@@ -114,6 +132,12 @@ class PhysicsExample extends SimpleApplication {
 
     inputManager.addMapping("up", new KeyTrigger(KeyInput.KEY_E), new MouseButtonTrigger(MouseInput.BUTTON_RIGHT))
     inputManager.addMapping("shoot", new KeyTrigger(KeyInput.KEY_SPACE), new MouseButtonTrigger(MouseInput.BUTTON_RIGHT))
+
+    inputManager.addMapping("left", new KeyTrigger(KeyInput.KEY_H), new MouseButtonTrigger(MouseInput.BUTTON_LEFT))
+    inputManager.addMapping("down", new KeyTrigger(KeyInput.KEY_J), new MouseButtonTrigger(MouseInput.BUTTON_RIGHT))
+    inputManager.addMapping("right", new KeyTrigger(KeyInput.KEY_K), new MouseButtonTrigger(MouseInput.BUTTON_RIGHT))
+    inputManager.addMapping("forward", new KeyTrigger(KeyInput.KEY_I), new MouseButtonTrigger(MouseInput.BUTTON_RIGHT))
+
     inputManager.addListener(new ActionListener {
       override def onAction(name: String, isPressed: Boolean, tpf: Float): Unit = {
         if (isPressed) {
@@ -125,26 +149,46 @@ class PhysicsExample extends SimpleApplication {
         }
       }
     }, "shoot")
+
+
+
+
     inputManager.addListener(new AnalogListener {
       override def onAnalog(name: String, value: Float, tpf: Float): Unit = {
-          rootNode.depthFirstTraversal((spatial: Spatial) => {
-            if(spatial.getName == "ball"){
-              val rb = spatial.getUserData("phy").asInstanceOf[RigidBodyControl]
-//              rb.applyImpulse(new Vector3f(0f, rb.getMass, 0f).mult( 20f * value), new Vector3f(0f, 0f, 0f))
-              rb.applyForce(new Vector3f(0f, rb.getMass, 0f).mult( 20f), new Vector3f(0f, 0f, 0f))
-            }
-          })
-        }
+        rootNode.depthFirstTraversal((spatial: Spatial) => {
+          if (spatial.getName == "ball") {
+            val rb = spatial.getUserData("phy").asInstanceOf[RigidBodyControl]
+            //              rb.applyImpulse(new Vector3f(0f, rb.getMass, 0f).mult( 20f * value), new Vector3f(0f, 0f, 0f))
+            rb.applyForce(new Vector3f(0f, rb.getMass, 0f).mult(20f), new Vector3f(0f, 0f, 0f))
+          }
+        })
+      }
     }, "up")
+
+
+
+
+    inputManager.addListener(new ActionListener {
+      override def onAction(name: String, isPressed: Boolean, tpf: Float): Unit = {
+        if (isPressed && name == "left") {
+          sanitar.getControl(classOf[RigidBodyControl]).setLinearVelocity(new Vector3f(0f, 10.05f, 0f) )
+        }
+      }
+    }, "left")
+
+
+
+
+
 
     bulletAppState.getPhysicsSpace.addCollisionListener((event: PhysicsCollisionEvent) => {
       val a = event.getNodeA
       val b = event.getNodeB
 
-      if(a.getName.startsWith("box") && b.getName == "ball" &&a.isInstanceOf[Geometry]){
+      if (a.getName.startsWith("box") && b.getName == "ball" && a.isInstanceOf[Geometry]) {
         a.asInstanceOf[Geometry].getMaterial.setColor("Color", ColorRGBA.Red)
       }
-      if(b.getName.startsWith("box") && a.getName == "ball" &&b.isInstanceOf[Geometry]){
+      if (b.getName.startsWith("box") && a.getName == "ball" && b.isInstanceOf[Geometry]) {
         b.asInstanceOf[Geometry].getMaterial.setColor("Color", ColorRGBA.Red)
       }
     })
